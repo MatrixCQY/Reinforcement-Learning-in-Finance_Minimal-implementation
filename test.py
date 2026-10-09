@@ -64,11 +64,15 @@ if __name__ == '__main__':
         f.write(f"learning rate for actor network: {lr_actor}\n")
         f.write(f"learning rate for critic network: {lr_critic}\n")
         
+    # 基准：初始仓位（现金 + 持股）原地不动，等价于每步都选 action 0
+    df['buy_hold'] = param.initial_balance + param.initial_stock_owned * df['收盘']
+
     for episode in range(1):
         state,info = env.reset()
-        modelSavePath = os.path.join("model", "PPO_Eval_{}_{}.pth".format(env_name, episode))
+        output_csv_path = os.path.join(log_dir, f"{env_name}_Eval_episode{episode}.csv")
         for step in range(6000):
-            action = ppo_agent.select_action(state)
+            # 评估时只做前向推理：不采样、不写 buffer、不更新模型
+            action = ppo_agent.select_action(state, deterministic=True)
             state, reward, done, truncated, info = env.step(action)
             print("episode:",episode,"step:",step)
             print("action",action,"\nreward:",reward,"\ninfo:",info)
@@ -79,19 +83,18 @@ if __name__ == '__main__':
             df.loc[loc, 'asset'] = info['asset']
             df.loc[loc, 'balance'] = info['balance']
             df.loc[loc, 'stock_owned'] = info['stock_owned']
-            ppo_agent.buffer.rewards.append(reward)
-            ppo_agent.buffer.is_terminals.append(done)
-            if len(ppo_agent.buffer.rewards) >= 10:
-                output_csv_path = os.path.join(log_dir, f"{env_name}_Eval_episode{episode}.csv")
-                df.to_csv(output_csv_path, index=False)
-                ppo_agent.update()
             if done:
-                output_csv_path = os.path.join(log_dir, f"{env_name}_Eval_episode{episode}.csv")
-                df.to_csv(output_csv_path, index=False)
-                ppo_agent.save(modelSavePath)
                 break
-        ppo_agent.save(modelSavePath)
-    
+        df.to_csv(output_csv_path, index=False)
+
+        first, last = seq_length - 1, loc
+        print("============================================================================================")
+        print(f"agent    asset: {df.loc[first, 'asset']:.2f} -> {df.loc[last, 'asset']:.2f}  "
+              f"({(df.loc[last, 'asset'] / df.loc[first, 'asset'] - 1) * 100:+.2f}%)")
+        print(f"buy&hold asset: {df.loc[first, 'buy_hold']:.2f} -> {df.loc[last, 'buy_hold']:.2f}  "
+              f"({(df.loc[last, 'buy_hold'] / df.loc[first, 'buy_hold'] - 1) * 100:+.2f}%)")
+        print("action counts:", df.loc[first:last, 'action'].value_counts().sort_index().to_dict())
+
     
     
     

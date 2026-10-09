@@ -17,6 +17,12 @@ def saveResultAsHTML(targetpath,episode,para):
                                 name='Asset',
                                 line=dict(color='blue', width=2)))
 
+    if 'buy_hold' in df.columns:
+        fig_asset.add_trace(go.Scatter(x=df.index, y=df['buy_hold'],
+                                    mode='lines',
+                                    name='Buy & Hold',
+                                    line=dict(color='gray', width=1, dash='dash')))
+
     fig_asset.update_layout(
         title='Asset Over Time',
         xaxis_title='Date',

@@ -20,8 +20,8 @@ class SingleStockDayEnv:
         self.initial_stockOwned = param.initial_stock_owned
         self.balance = param.initial_balance
         self.stock_owned = param.initial_stock_owned
-        self.asset = self.balance + self.stock_owned* self.get_price(self.date - 1)[2] # self.get_price(self.date - 1)[2]是最高价
-        self.transaction_fee = param.transaction_fee                                   # self.get_price(self.date - 1)[1]是收盘价
+        self.asset = self.balance + self.stock_owned* self.get_price(self.date - 1)[1] # self.get_price(self.date - 1)[1]是收盘价
+        self.transaction_fee = param.transaction_fee
         self.endDate = self.df.shape[0] - 1  
         self.observation_space = self.df.iloc[0].to_numpy()
         self.action_space = np.arange(21) 
@@ -30,8 +30,8 @@ class SingleStockDayEnv:
     def reset(self):
         self.date = self.seq_length
         self.balance = self.initial_balance
-        self.asset = self.balance + self.stock_owned* self.get_price(self.date - 1)[2] # 这里是用了最高价做了初始资产计算，不过不影响后续计算
         self.stock_owned = self.initial_stockOwned
+        self.asset = self.balance + self.stock_owned* self.get_price(self.date - 1)[1] # 用收盘价计算初始资产，与 step 中的口径一致
         state = self.get_state(self.date)
         info = {"asset": self.asset, "balance": self.balance, "stock_owned": self.stock_owned}
         return state, info

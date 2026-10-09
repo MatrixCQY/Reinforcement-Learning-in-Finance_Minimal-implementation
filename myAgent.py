@@ -119,14 +119,19 @@ class PPO:
         self.MseLoss = nn.MSELoss()
 
 
-    def select_action(self, state):
+    def select_action(self, state, deterministic=False):
         with torch.no_grad():
             state = torch.FloatTensor(state).to(device)
             if state.dim() == 2:
                 state = state[None, :, :]
-            
+
+            if deterministic:
+                # 评估模式：取概率最大的动作，不写入 buffer
+                action_probs = self.policy_old.actor(state)
+                return action_probs.argmax(dim=-1).item()
+
             action, action_logprob, state_val = self.policy_old.act(state)
-        
+
         self.buffer.states.append(state)
         self.buffer.actions.append(action)
         self.buffer.logprobs.append(action_logprob)
