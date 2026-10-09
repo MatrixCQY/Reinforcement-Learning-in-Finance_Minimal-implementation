@@ -20,8 +20,7 @@ def test():
 
 
 if __name__ == '__main__':
-    train =False
-    fixed = True
+    param.trainMode = False   # 环境据此读取 testDataset；否则会在训练集上评估
     stockCode = param.code
     seq_length = param.seq_length
     env_name = param.envName
